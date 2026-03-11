@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok OAuth Callback</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 40px;
+      background: #f8fafc;
+      color: #0f172a;
+      line-height: 1.6;
+    }
+
+    .box {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    code {
+      background: #eef2ff;
+      padding: 2px 6px;
+      border-radius: 6px;
+      word-break: break-all;
+      display: inline-block;
+      max-width: 100%;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+
+    .status-box {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    .status-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .success {
+      color: #166534;
+    }
+
+    .error {
+      color: #b91c1c;
+    }
+
+    .muted {
+      color: #64748b;
+    }
+
+    .small {
+      font-size: 14px;
+    }
+
+    .copy-btn {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .copy-btn:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>TikTok OAuth Callback</h1>
+    <p>If authorization succeeds, TikTok will redirect back to this page with a <code>code</code>.</p>
+
+    <div class="label">Full URL</div>
+    <p><code id="fullUrl"></code></p>
+
+    <div class="label">Authorization Code</div>
+    <p><code id="codeValue">No code found</code></p>
+    <button class="copy-btn" id="copyCodeBtn" type="button">Copy Authorization Code</button>
+
+    <div class="label">State</div>
+    <p><code id="stateValue">No state found</code></p>
+
+    <div class="status-box">
+      <div class="status-title">Backend Exchange Status</div>
+      <p id="exchangeStatus" class="muted">Waiting...</p>
+      <p id="exchangeMessage" class="small muted"></p>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+
+    const fullUrlEl = document.getElementById("fullUrl");
+    const codeEl = document.getElementById("codeValue");
+    const stateEl = document.getElementById("stateValue");
+    const exchangeStatusEl = document.getElementById("exchangeStatus");
+    const exchangeMessageEl = document.getElementById("exchangeMessage");
+    const copyCodeBtn = document.getElementById("copyCodeBtn");
+
+    fullUrlEl.textContent = window.location.href;
+    codeEl.textContent = code || "No code found";
+    stateEl.textContent = state || "No state found";
+
+    copyCodeBtn.addEventListener("click", async () => {
+      if (!code) {
+        alert("No authorization code found.");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(code);
+        copyCodeBtn.textContent = "Copied!";
+        setTimeout(() => {
+          copyCodeBtn.textContent = "Copy Authorization Code";
+        }, 1500);
+      } catch {
+        alert("Copy failed. Please copy manually.");
+      }
+    });
+
+    async function exchangeTokenWithBackend() {
+      if (!code) {
+        exchangeStatusEl.textContent = "No authorization code found in callback URL.";
+        exchangeStatusEl.className = "error";
+        exchangeMessageEl.textContent = "Backend token exchange was skipped.";
+        return;
+      }
+
+      exchangeStatusEl.textContent = "Exchanging token with backend...";
+      exchangeStatusEl.className = "muted";
+      exchangeMessageEl.textContent = "Trying http://localhost:3000/api/tiktok/exchange-token";
+
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/tiktok/exchange-token?code=${encodeURIComponent(code)}`,
+          {
+            method: "GET"
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          exchangeStatusEl.textContent = "Backend exchange failed.";
+          exchangeStatusEl.className = "error";
+          exchangeMessageEl.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+
+        exchangeStatusEl.textContent = "Backend exchange successful.";
+        exchangeStatusEl.className = "success";
+        exchangeMessageEl.textContent = "Access token has been exchanged successfully. You can now call /api/tiktok/videos.";
+      } catch (error) {
+        exchangeStatusEl.textContent = "Could not reach local backend.";
+        exchangeStatusEl.className = "error";
+        exchangeMessageEl.textContent =
+          "This page still works for manual copy. If you are running the backend locally, make sure Nest is running at http://localhost:3000.";
+      }
+    }
+
+    exchangeTokenWithBackend();
+  </script>
+</body>
+</html>
