@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Callback</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 40px;
+      background: #f8fafc;
+      color: #0f172a;
+      line-height: 1.6;
+    }
+    .box {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    code {
+      background: #eef2ff;
+      padding: 2px 6px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+    .label {
+      font-weight: bold;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>TikTok OAuth Callback</h1>
+    <p>If authorization succeeds, TikTok will redirect back to this page with a <code>code</code>.</p>
+
+    <div class="label">Full URL</div>
+    <p><code id="fullUrl"></code></p>
+
+    <div class="label">Authorization Code</div>
+    <p><code id="codeValue">No code found</code></p>
+
+    <div class="label">State</div>
+    <p><code id="stateValue">No state found</code></p>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+
+    document.getElementById("fullUrl").textContent = window.location.href;
+    document.getElementById("codeValue").textContent = code || "No code found";
+    document.getElementById("stateValue").textContent = state || "No state found";
+  </script>
+</body>
+</html>
